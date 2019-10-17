@@ -84,7 +84,7 @@ class AWSDynamoDBObjectMapperSwiftTests: XCTestCase {
         let boolNumberArray:Array<AnyObject> = [true as AnyObject, false as AnyObject, NSNumber(value: true as Bool), NSNumber(value: false as Bool)]
         let nonBoolNumberArray:Array<AnyObject> = [20 as AnyObject, 500.34 as AnyObject, NSNumber(value: 34 as Int), NSNumber(value: 3 as Int8), NSNumber(value: 23.4 as Float)]
         let myboolClass = type(of: NSNumber(value: true as Bool))
-        let klass: AnyClass = object_getClass(NSNumber(value: true as Bool))
+        let klass: AnyClass = object_getClass(NSNumber(value: true as Bool))!
 
         for myNum in boolNumberArray {
             let result = myNum.isKind(of: myboolClass)
@@ -153,7 +153,7 @@ class AWSDynamoDBObjectMapperSwiftTests: XCTestCase {
             return objectMapper.load(TestObjectV2.self, hashKey: hashKeyValue, rangeKey: rangeKeyValue)
         }).continueWith (block: { (task) -> AnyObject? in
                 if (task.error != nil) {
-                    XCTFail("Error: \(task.error)")
+                    XCTFail("Error: \(String(describing: task.error))")
                 }
                 if let obj = task.result as? TestObjectV2 {
                     XCTAssertEqual(obj.hashKeyRenamed, hashKeyValue)

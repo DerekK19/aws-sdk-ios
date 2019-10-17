@@ -16,6 +16,8 @@
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
 
+#import "AWSAuthUIHelper.h"
+
 NS_ASSUME_NONNULL_BEGIN
 
 @interface AWSTableInputCell : UITableViewCell
@@ -28,6 +30,10 @@ NS_ASSUME_NONNULL_BEGIN
 @property (weak, nonatomic) IBOutlet UIView *placeHolderView;
 
 - (void)onTap;
+
+- (void)setAWSTableInputCellFont;
+
+- (void)showHeaderLabel:(BOOL)visible;
 
 @end
 

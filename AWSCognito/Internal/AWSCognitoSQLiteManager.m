@@ -2,17 +2,7 @@
 // Copyright 2014-2016 Amazon.com,
 // Inc. or its affiliates. All Rights Reserved.
 //
-// Licensed under the Amazon Software License (the "License").
-// You may not use this file except in compliance with the
-// License. A copy of the License is located at
-//
-//     http://aws.amazon.com/asl/
-//
-// or in the "license" file accompanying this file. This file is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-// CONDITIONS OF ANY KIND, express or implied. See the License
-// for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 //
 
 
@@ -143,9 +133,9 @@
                                   AWSCognitoTableRecordKeyName];
         
         char *error;
-        if(sqlite3_exec(_sqlite, [createString UTF8String], NULL, NULL, &error) != SQLITE_OK)
+        if(sqlite3_exec(self->_sqlite, [createString UTF8String], NULL, NULL, &error) != SQLITE_OK)
         {
-            sqlite3_close(_sqlite);
+            sqlite3_close(self->_sqlite);
             AWSDDLogInfo(@"SQLite setup failed: %s", error);
             
             return;
@@ -172,9 +162,9 @@
                                    AWSCognitoRecordCountFieldName,
                                    AWSCognitoTableIdentityKeyName,
                                    AWSCognitoTableDatasetKeyName ];
-        if(sqlite3_exec(_sqlite, [createString2 UTF8String], NULL, NULL, &error) != SQLITE_OK)
+        if(sqlite3_exec(self->_sqlite, [createString2 UTF8String], NULL, NULL, &error) != SQLITE_OK)
         {
-            sqlite3_close(_sqlite);
+            sqlite3_close(self->_sqlite);
             AWSDDLogInfo(@"SQLite setup failed: %s", error);
             
             return;
@@ -228,7 +218,7 @@
 
 #pragma mark - Data manipulations
 
-- (NSArray<AWSCognitoDatasetMetadata *> *)getDatasets:(NSError **)error {
+- (NSArray<AWSCognitoDatasetMetadata *> *)getDatasets:(NSError * __autoreleasing *)error {
     __block NSMutableArray<AWSCognitoDatasetMetadata *> *datasets = [NSMutableArray array];
     
     dispatch_sync(self.dispatchQueue, ^{
@@ -290,8 +280,8 @@
     return datasets;
 }
 
-- (void)loadDatasetMetadata:(AWSCognitoDatasetMetadata *)metadata error:(NSError **)error {
-    
+- (BOOL)loadDatasetMetadata:(AWSCognitoDatasetMetadata *)metadata error:(NSError * __autoreleasing *)error {
+    __block BOOL success = YES;
     dispatch_sync(self.dispatchQueue, ^{
         NSString *query = [NSString stringWithFormat:@"SELECT %@, %@, %@, %@, %@, %@ FROM %@ WHERE %@ = ? and %@ = ?",
                            AWSCognitoLastSyncCount,
@@ -336,15 +326,17 @@
             {
                 *error = [AWSCognitoUtil errorLocalDataStorageFailed:[NSString stringWithFormat:@"%s", sqlite3_errmsg(self.sqlite)]];
             }
+            success = NO;
         }
         
         sqlite3_reset(statement);
         sqlite3_finalize(statement);
     });
+    return success;
 }
 
 
-- (BOOL)updateDatasetMetadata:(AWSCognitoDatasetMetadata *)dataset error:(NSError **)error {
+- (BOOL)updateDatasetMetadata:(AWSCognitoDatasetMetadata *)dataset error:(NSError * __autoreleasing *)error {
     __block BOOL success = YES;
     NSDate *lastModified = [NSDate date];
     dispatch_sync(self.dispatchQueue, ^{
@@ -443,9 +435,9 @@
     return success;
 }
 
-- (AWSCognitoRecord *)getRecordById_internal:(NSString *)recordId datasetName:(NSString *)datasetName error:(NSError **)error sync:(BOOL) sync{
+- (AWSCognitoRecord *)getRecordById_internal:(NSString *)recordId datasetName:(NSString *)datasetName error:(NSError * __autoreleasing *)error sync:(BOOL) sync{
     __block AWSCognitoRecord *record = nil;
-    void (^getRecord)() = ^{
+    void (^getRecord)(void) = ^{
         NSString *query = [NSString stringWithFormat:@"SELECT %@, %@, %@, %@, %@, %@ FROM %@ WHERE %@ = ? AND %@ = ? AND %@ = ?",
                            AWSCognitoLastModifiedFieldName,
                            AWSCognitoModifiedByFieldName,
@@ -523,7 +515,7 @@
     return _identityId;
 }
 
-- (NSDictionary *)recordsUpdatedAfterLastSync:(NSString *) datasetName error:(NSError **)error
+- (NSDictionary *)recordsUpdatedAfterLastSync:(NSString *) datasetName error:(NSError * __autoreleasing *)error
 {
     __block NSMutableDictionary *newRecords = [NSMutableDictionary new];
 
@@ -656,7 +648,7 @@
     return allRecords;
 }
 
-- (BOOL)putRecord:(AWSCognitoRecord *)record datasetName:(NSString *)datasetName error:(NSError **)error {
+- (BOOL)putRecord:(AWSCognitoRecord *)record datasetName:(NSString *)datasetName error:(NSError * __autoreleasing *)error {
     __block BOOL result = NO;
     NSDate *lastModifiedDate = [NSDate date];
     dispatch_sync(self.dispatchQueue, ^{
@@ -1023,7 +1015,7 @@
 }
 
 
-- (BOOL)flagRecordAsDeletedById:(NSString *)recordId datasetName:(NSString *) datasetName error:(NSError **)error
+- (BOOL)flagRecordAsDeletedById:(NSString *)recordId datasetName:(NSString *) datasetName error:(NSError * __autoreleasing *)error
 {
     __block BOOL result = NO;
 
@@ -1099,7 +1091,7 @@
     return result;
 }
 
-- (BOOL)deleteRecordById:(NSString *)recordId datasetName:(NSString *) datasetName error:(NSError **)error
+- (BOOL)deleteRecordById:(NSString *)recordId datasetName:(NSString *) datasetName error:(NSError * __autoreleasing *)error
 {
     __block BOOL result = NO;
 
@@ -1148,7 +1140,7 @@
     return result;
 }
 
-- (BOOL)updateWithRemoteChanges:(NSString *)datasetName nonConflicts:(NSArray *)nonConflictRecords resolvedConflicts:(NSArray *)resolvedConflicts error:(NSError **)error {
+- (BOOL)updateWithRemoteChanges:(NSString *)datasetName nonConflicts:(NSArray *)nonConflictRecords resolvedConflicts:(NSArray *)resolvedConflicts error:(NSError * __autoreleasing *)error {
     __block BOOL result = YES;
     dispatch_sync(self.dispatchQueue, ^{
         
@@ -1185,7 +1177,7 @@
     return result;
 }
 
-- (BOOL)updateLocalRecordMetadata:(NSString *)datasetName records:(NSArray *)updatedRecords error:(NSError **)error {
+- (BOOL)updateLocalRecordMetadata:(NSString *)datasetName records:(NSArray *)updatedRecords error:(NSError * __autoreleasing *)error {
     __block BOOL result = YES;
     dispatch_sync(self.dispatchQueue, ^{
         // Do this as a single transaction
@@ -1345,7 +1337,7 @@
 
 #pragma mark - Merge Utilties
 
-- (BOOL)reparentDatasets:(NSString *)oldId withNewId:(NSString *)newId error:(NSError **)error {
+- (BOOL)reparentDatasets:(NSString *)oldId withNewId:(NSString *)newId error:(NSError * __autoreleasing *)error {
     
     __block BOOL result = YES;
     
@@ -1473,7 +1465,7 @@
     return result;
 }
 
-- (NSArray<NSString *> *)getMergeDatasets:(NSString *)datasetName error:(NSError **)error {
+- (NSArray<NSString *> *)getMergeDatasets:(NSString *)datasetName error:(NSError * __autoreleasing *)error {
     __block NSMutableArray *datasets = nil;
     
     dispatch_sync(self.dispatchQueue, ^{
@@ -1534,7 +1526,7 @@
     return filePath;
 }
 
-- (BOOL)resetSyncCount:(NSString *)datasetName error:(NSError **)error {
+- (BOOL)resetSyncCount:(NSString *)datasetName error:(NSError * __autoreleasing *)error {
     __block BOOL result = YES;
     
     dispatch_sync(self.dispatchQueue, ^{
@@ -1634,7 +1626,7 @@
     return result;
 }
 
-- (BOOL)deleteMetadata:(NSString *)datasetName error:(NSError **)error {
+- (BOOL)deleteMetadata:(NSString *)datasetName error:(NSError * __autoreleasing *)error {
     __block BOOL result = NO;
     
     dispatch_sync(self.dispatchQueue, ^{
@@ -1675,7 +1667,7 @@
     return result;
 }
 
-- (BOOL)deleteDataset:(NSString *) datasetName error:(NSError **)error
+- (BOOL)deleteDataset:(NSString *) datasetName error:(NSError * __autoreleasing *)error
 {
     __block BOOL result = NO;
 
